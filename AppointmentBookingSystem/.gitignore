@@ -25,3 +25,8 @@ packages/
 # Logs
 *.log
 *.tmp
+
+# Config files
+appsettings.json
+appsettings.*.json
+secrets.json

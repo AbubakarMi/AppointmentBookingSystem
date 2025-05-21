@@ -1,7 +1,14 @@
-﻿// Models/User.cs
-using Microsoft.AspNetCore.Identity;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class User : IdentityUser  // Inherits from IdentityUser
+public class User
 {
-    public string FullName { get; set; }
+    public int Id { get; set; }
+
+    [Required]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    public string PasswordHash { get; set; } = string.Empty;
+
+    public string? FullName { get; set; }
 }
