@@ -1,7 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
-using AppointmentBookingSystem;
+using System.Net.Mail;
+using System.Net;
+using System.Threading.Tasks;
 using AppointmentBookingSystem.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using AppointmentBookingSystem;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +28,25 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings.GetValue<string>("SecretKey");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+});
 
 var app = builder.Build();
 
@@ -47,7 +72,6 @@ app.MapGet("/db-health", async (IServiceProvider services) =>
     }
 });
 
-// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -55,24 +79,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization();
+
 app.MapControllers();
 
-// Initial DB check log
+// Initial connection test
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        Console.WriteLine($"? Database connected: {await db.Database.CanConnectAsync()}");
-        var migrations = await db.Database.GetPendingMigrationsAsync();
-        Console.WriteLine(migrations.Any()
-            ? $"?? Pending migrations: {string.Join(", ", migrations)}"
-            : "? No pending migrations.");
+        Console.WriteLine($"Database connected: {await db.Database.CanConnectAsync()}");
+        Console.WriteLine($"Pending migrations: {string.Join(", ", await db.Database.GetPendingMigrationsAsync())}");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"? Database connection failed: {ex.Message}");
+        Console.WriteLine($"Database connection failed: {ex.Message}");
     }
 }
 
