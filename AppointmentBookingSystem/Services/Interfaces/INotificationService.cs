@@ -1,7 +1,9 @@
-﻿namespace AppointmentBookingSystem.Services
+﻿using AppointmentBookingSystem.Models;
+
+namespace AppointmentBookingSystem.Services
 {
     public interface INotificationService
     {
-        void SendBookingConfirmation(string to, string message);
+        Task SendBookingConfirmationAsync(Appointment appointment);
     }
 }

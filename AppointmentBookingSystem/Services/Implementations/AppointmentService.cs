@@ -1,22 +1,28 @@
-﻿// Services/AppointmentService.cs
-using System.Threading.Tasks;
-using AppointmentBookingSystem.Models;
+﻿using AppointmentBookingSystem.Models;
+using AppointmentBookingSystem.Services;
+using AppointmentBookingSystem;
 
-namespace AppointmentBookingSystem.Services
+public class AppointmentService : IAppointmentService
 {
-    public class AppointmentService : IAppointmentService
+    private readonly AppDbContext _db;
+    private readonly INotificationService _notificationService;
+
+    public AppointmentService(AppDbContext db, INotificationService notificationService)
     {
-        private readonly AppDbContext _db;
+        _db = db;
+        _notificationService = notificationService;
+    }
 
-        public AppointmentService(AppDbContext db)
+    public async Task<bool> BookAppointment(Appointment appointment)
+    {
+        _db.Appointments.Add(appointment);
+        var success = await _db.SaveChangesAsync() > 0;
+
+        if (success)
         {
-            _db = db;
+            await _notificationService.SendBookingConfirmationAsync(appointment);
         }
 
-        public async Task<bool> BookAppointment(Appointment appointment)
-        {
-            _db.Appointments.Add(appointment);
-            return await _db.SaveChangesAsync() > 0;
-        }
+        return success;
     }
 }
