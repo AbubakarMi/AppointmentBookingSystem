@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AppointmentBookingSystem.Models;
 
-namespace AppointmentBookingSystem.Services
+namespace AppointmentBookingSystem.Services.Implementations
 {
     public interface ITimeSlotService
     {
@@ -21,7 +21,7 @@ namespace AppointmentBookingSystem.Services
         public bool IsAvailable(DateTime start, DateTime end)
         {
             return !_appointments.Any(a =>
-                (start < a.EndTime && end > a.StartTime));
+                start < a.EndTime && end > a.StartTime);
         }
 
         public IEnumerable<Appointment> GetAllAppointments() => _appointments;

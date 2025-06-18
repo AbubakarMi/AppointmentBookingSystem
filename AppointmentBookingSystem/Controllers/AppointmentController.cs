@@ -6,6 +6,7 @@ using AppointmentBookingSystem.Services;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using AppointmentBookingSystem.Services.Implementations;
 
 namespace AppointmentBookingSystem.Controllers
 {
