@@ -1,8 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// DbContext/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+using AppointmentBookingSystem.Models;
 
-
-public class AppDbContext : DbContext
+namespace AppointmentBookingSystem
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-    public DbSet<Appointment> Appointments { get; set; }
+    public class AppDbContext : DbContext
+    {
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public DbSet<Appointment> Appointments { get; set; }
+    }
 }

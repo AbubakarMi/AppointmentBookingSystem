@@ -1,14 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AppointmentBookingSystem.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
-// Services/AppointmentService.cs
-public class AppointmentService : IAppointmentService
+namespace AppointmentBookingSystem.Services
 {
-    private readonly AppDbContext _db;
-    public AppointmentService(AppDbContext db) => _db = db;
-
-    public async Task<bool> BookAppointment(Appointment appointment)
+    public class AppointmentService : IAppointmentService
     {
-        _db.Appointments.Add(appointment);
-        return await _db.SaveChangesAsync() > 0;
+        private readonly AppDbContext _db;
+
+        public AppointmentService(AppDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<bool> BookAppointment(Appointment appointment)
+        {
+            _db.Appointments.Add(appointment);
+            return await _db.SaveChangesAsync() > 0;
+        }
     }
 }

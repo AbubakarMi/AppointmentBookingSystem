@@ -1,0 +1,32 @@
+# Build outputs
+bin/
+obj/
+.vs/
+
+# User files
+*.user
+*.suo
+*.userprefs
+
+# Sensitive data
+appsettings.json
+appsettings.*.json
+secrets.json
+
+# Packages
+packages/
+*.nupkg
+
+# IDE files
+.idea/
+.vscode/
+*.sw*
+
+# Logs
+*.log
+*.tmp
+
+# Config files
+appsettings.json
+appsettings.*.json
+secrets.json
