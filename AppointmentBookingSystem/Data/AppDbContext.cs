@@ -1,5 +1,4 @@
-﻿// DbContext/AppDbContext.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using AppointmentBookingSystem.Models;
 
 namespace AppointmentBookingSystem
