@@ -1,25 +1,29 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using AppointmentBookingSystem;
+using AppointmentBookingSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
-        options.JsonSerializerOptions.DefaultIgnoreCondition =
-            JsonIgnoreCondition.WhenWritingNull);
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
-// Learn more about configuring Swagger/OpenAPI
+// Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Database Configuration
+// PostgreSQL EF Core Configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQLConnection")));
 
+// Register Services
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
 var app = builder.Build();
 
-// Database Health Check Endpoint
+// Map health check endpoint
 app.MapGet("/db-health", async (IServiceProvider services) =>
 {
     try
@@ -41,7 +45,7 @@ app.MapGet("/db-health", async (IServiceProvider services) =>
     }
 });
 
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -52,18 +56,21 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-// Initial connection test
+// Initial DB check log
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        Console.WriteLine($"Database connected: {await db.Database.CanConnectAsync()}");
-        Console.WriteLine($"Pending migrations: {string.Join(", ", await db.Database.GetPendingMigrationsAsync())}");
+        Console.WriteLine($"? Database connected: {await db.Database.CanConnectAsync()}");
+        var migrations = await db.Database.GetPendingMigrationsAsync();
+        Console.WriteLine(migrations.Any()
+            ? $"?? Pending migrations: {string.Join(", ", migrations)}"
+            : "? No pending migrations.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Database connection failed: {ex.Message}");
+        Console.WriteLine($"? Database connection failed: {ex.Message}");
     }
 }
 

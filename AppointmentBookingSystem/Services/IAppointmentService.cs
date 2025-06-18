@@ -1,5 +1,10 @@
-﻿// Services/IAppointmentService.cs
-public interface IAppointmentService
+﻿using System.Threading.Tasks;
+using AppointmentBookingSystem.Models;
+
+namespace AppointmentBookingSystem.Services
 {
-    Task<bool> BookAppointment(Appointment appointment);
+    public interface IAppointmentService
+    {
+        Task<bool> BookAppointment(Appointment appointment);
+    }
 }
