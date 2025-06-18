@@ -1,6 +1,6 @@
-﻿using AppointmentBookingSystem.Models;
-using Microsoft.EntityFrameworkCore;
+﻿// Services/AppointmentService.cs
 using System.Threading.Tasks;
+using AppointmentBookingSystem.Models;
 
 namespace AppointmentBookingSystem.Services
 {

@@ -1,6 +1,8 @@
-﻿// Controllers/AppointmentController.cs
+﻿
+// Controllers/AppointmentController.cs
 using Microsoft.AspNetCore.Mvc;
 using AppointmentBookingSystem.Models;
+using AppointmentBookingSystem.Services;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,41 +13,40 @@ namespace AppointmentBookingSystem.Controllers
     [Route("[controller]/[action]")]
     public class AppointmentController : ControllerBase
     {
-        private static List<Appointment> _appointments = new();
+        private readonly IAppointmentService _appointmentService;
+        private readonly ITimeSlotService _timeSlotService;
+
+        public AppointmentController(IAppointmentService appointmentService, ITimeSlotService timeSlotService)
+        {
+            _appointmentService = appointmentService;
+            _timeSlotService = timeSlotService;
+        }
 
         [HttpGet]
-        public IActionResult GetAll() => Ok(_appointments);
+        public IActionResult GetAll() => Ok(_timeSlotService.GetAllAppointments());
 
         [HttpPost]
-        public IActionResult Book([FromBody] Appointment appointment)
+        public async Task<IActionResult> Book([FromBody] Appointment appointment)
         {
-            appointment.Id = _appointments.Count + 1;
-            _appointments.Add(appointment);
-            return Ok("Appointment booked successfully");
+            if (!_timeSlotService.IsAvailable(appointment.StartTime, appointment.EndTime))
+                return BadRequest("Time slot is already booked");
+
+            var result = await _appointmentService.BookAppointment(appointment);
+            return result ? Ok("Appointment booked successfully") : StatusCode(500, "Booking failed");
         }
 
         [HttpPut("{id}")]
         public IActionResult Reschedule(int id, [FromBody] Appointment updated)
         {
-            var existing = _appointments.FirstOrDefault(a => a.Id == id);
-            if (existing == null) return NotFound("Appointment not found");
-
-            existing.StartTime = updated.StartTime;
-            existing.EndTime = updated.EndTime;
-            existing.PatientName = updated.PatientName;
-            existing.Notes = updated.Notes;
-
-            return Ok("Appointment rescheduled");
+            var result = _timeSlotService.RescheduleAppointment(id, updated);
+            return result ? Ok("Appointment rescheduled") : NotFound("Appointment not found");
         }
 
         [HttpDelete("{id}")]
         public IActionResult Cancel(int id)
         {
-            var appointment = _appointments.FirstOrDefault(a => a.Id == id);
-            if (appointment == null) return NotFound("Appointment not found");
-
-            _appointments.Remove(appointment);
-            return Ok("Appointment cancelled");
+            var result = _timeSlotService.CancelAppointment(id);
+            return result ? Ok("Appointment cancelled") : NotFound("Appointment not found");
         }
     }
 }

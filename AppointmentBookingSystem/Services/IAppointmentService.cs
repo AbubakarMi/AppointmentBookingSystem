@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿// Services/IAppointmentService.cs
+using System.Threading.Tasks;
 using AppointmentBookingSystem.Models;
 
 namespace AppointmentBookingSystem.Services
