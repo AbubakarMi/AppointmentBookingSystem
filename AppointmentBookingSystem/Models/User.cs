@@ -1,4 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
+using System.Net;
+using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
 namespace AppointmentBookingSystem.Models
 {
@@ -13,5 +17,8 @@ namespace AppointmentBookingSystem.Models
         public string PasswordHash { get; set; } = string.Empty;
 
         public string? FullName { get; set; }
+
+        public string Role { get; set; } = "User";
     }
+
 }
