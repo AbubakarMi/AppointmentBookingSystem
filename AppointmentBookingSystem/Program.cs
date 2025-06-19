@@ -1,56 +1,92 @@
 using Microsoft.EntityFrameworkCore;
-using System.Net.Mail;
-using System.Net;
-using System.Threading.Tasks;
-using AppointmentBookingSystem.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using AppointmentBookingSystem.Services;
 using System.Text;
-using AppointmentBookingSystem;
 using System.Text.Json.Serialization;
+using AppointmentBookingSystem;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Services
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
+    .AddJsonOptions(x => x.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
-// Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer {token}'",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            }, new string[] {}
+        }
+    });
+});
 
-// PostgreSQL EF Core Configuration
+// PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQLConnection")));
 
-// Register Services
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
-// JWT Authentication
+// JWT Setup
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings.GetValue<string>("SecretKey");
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
-    };
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+        };
+    });
 
 var app = builder.Build();
 
-// Map health check endpoint
+// ?? Login Endpoint
+app.MapPost("/login", async ([FromBody] LoginRequest request, AppDbContext db) =>
+{
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+    if (user == null || user.PasswordHash != request.Password)
+        return Results.Unauthorized();
+
+    var claims = new[]
+    {
+        new System.Security.Claims.Claim("username", user.Username),
+        new System.Security.Claims.Claim("role", user.Role ?? "User")
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(2),
+        signingCredentials: creds);
+
+    var tokenString = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+    return Results.Ok(new { token = tokenString });
+});
+
+// ?? Health Check Endpoint
 app.MapGet("/db-health", async (IServiceProvider services) =>
 {
     try
@@ -79,25 +115,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthentication(); // Add authentication middleware
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
-// Initial connection test
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    try
-    {
-        Console.WriteLine($"Database connected: {await db.Database.CanConnectAsync()}");
-        Console.WriteLine($"Pending migrations: {string.Join(", ", await db.Database.GetPendingMigrationsAsync())}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database connection failed: {ex.Message}");
-    }
-}
-
 app.Run();
+
+record LoginRequest(string Username, string Password);
