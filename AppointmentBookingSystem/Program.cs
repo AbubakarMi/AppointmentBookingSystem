@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using AppointmentBookingSystem.Services;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authorization;
 using AppointmentBookingSystem;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,6 +60,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
         };
     });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -118,6 +121,11 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Example protected routes
+app.MapGet("/user-area", [Authorize] () => "Welcome, authenticated user!");
+app.MapGet("/admin-area", [Authorize(Roles = "Admin")] () => "Welcome, Admin user!");
+
 app.Run();
 
 record LoginRequest(string Username, string Password);
