@@ -6,11 +6,24 @@ using AppointmentBookingSystem.Services;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
+using System.Net.Mail;
+using System.Net;
+using AppointmentBookingSystem.Models;
 using AppointmentBookingSystem;
 using Microsoft.AspNetCore.Mvc;
-using AppointmentBookingSystem.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// SMTP Email Configuration from appsettings
+builder.Services.AddSingleton(new SmtpClient
+{
+    Host = builder.Configuration["Smtp:Host"],
+    Port = int.Parse(builder.Configuration["Smtp:Port"]),
+    EnableSsl = bool.Parse(builder.Configuration["Smtp:EnableSsl"]),
+    Credentials = new NetworkCredential(
+        builder.Configuration["Smtp:Username"],
+        builder.Configuration["Smtp:Password"])
+});
 
 // Services
 builder.Services.AddControllers()
@@ -149,7 +162,7 @@ using (var scope = app.Services.CreateScope())
         }
         else
         {
-            Console.WriteLine("? Admin user already exists");
+            Console.WriteLine("?? Admin user already exists");
         }
     }
     catch (Exception ex)
@@ -157,7 +170,6 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"? Failed to seed admin: {ex.Message}");
     }
 }
-
 
 app.Run();
 
