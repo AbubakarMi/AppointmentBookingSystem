@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using AppointmentBookingSystem;
 using Microsoft.AspNetCore.Mvc;
+using AppointmentBookingSystem.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -125,6 +126,38 @@ app.MapControllers();
 // Example protected routes
 app.MapGet("/user-area", [Authorize] () => "Welcome, authenticated user!");
 app.MapGet("/admin-area", [Authorize(Roles = "Admin")] () => "Welcome, Admin user!");
+
+// ?? Seed default admin user
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        await db.Database.MigrateAsync();
+
+        if (!await db.Users.AnyAsync(u => u.Role == "Admin"))
+        {
+            db.Users.Add(new User
+            {
+                Username = "admin",
+                PasswordHash = "Default#Pass123",
+                FullName = "Super Admin",
+                Role = "Admin"
+            });
+            await db.SaveChangesAsync();
+            Console.WriteLine("? Default admin user created (username: admin, password: admin123)");
+        }
+        else
+        {
+            Console.WriteLine("? Admin user already exists");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"? Failed to seed admin: {ex.Message}");
+    }
+}
+
 
 app.Run();
 
